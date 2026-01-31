@@ -1,0 +1,5 @@
+Para fazer o push manual, execute:
+git push origin --force --all
+git push origin --force --tags
+
+Ou configure SSH/credenciais do GitHub.
