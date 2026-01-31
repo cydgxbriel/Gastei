@@ -1,0 +1,36 @@
+# .gitignore
+
+# Credenciais (NUNCA commitar!)
+keys.md
+docs/keys.md
+n8n/workflows/whatsapp_simple.json
+n8n/create_workflow.py
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

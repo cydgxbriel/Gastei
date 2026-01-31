@@ -1,0 +1,297 @@
+{
+    "name": "WhatsApp Transaction Processor",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "lastNode"
+            },
+            "id": "webhook-1",
+            "name": "Webhook WhatsApp",
+            "type": "n8n-nodes-base.webhook",
+            "position": [
+                250,
+                300
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.messageType }}",
+                            "value2": "audio"
+                        }
+                    ]
+                }
+            },
+            "id": "if-audio",
+            "name": "Is Audio?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                450,
+                300
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.audioUrl }}",
+                "options": {}
+            },
+            "id": "download-audio",
+            "name": "Download Audio",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                650,
+                200
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "url": "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+                "sendBody": true,
+                "contentType": "binaryData",
+                "inputDataFieldName": "data",
+                "options": {
+                    "headers": {
+                        "Authorization": "Bearer {{ $credentials.huggingfaceApi.apiKey }}"
+                    }
+                }
+            },
+            "id": "whisper",
+            "name": "Whisper Transcription",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                850,
+                200
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parsing inteligente da transcrição\nconst text = $input.first().json.text || $input.first().json.message || '';\nconst textLower = text.toLowerCase();\n\n// Extrair valor\nconst valorMatch = textLower.match(/r?\\$?\\s*(\\d+(?:[.,]\\d{1,2})?)(?:\\s*(?:reais|real))?/i);\nconst amount = valorMatch ? parseFloat(valorMatch[1].replace(',', '.')) : null;\n\n// Identificar tipo\nlet type = 'expense'; // Default\nconst incomeWords = ['salário', 'salario', 'recebi', 'entrada', 'pagamento', 'rendimento', 'ganhei'];\nconst investmentWords = ['investi', 'investimento', 'fii', 'ação', 'acao', 'ações', 'acoes', 'crypto', 'bitcoin', 'etf', 'tesouro', 'cdb', 'renda fixa'];\n\nif (incomeWords.some(w => textLower.includes(w))) {\n  type = 'income';\n} else if (investmentWords.some(w => textLower.includes(w))) {\n  type = 'investment';\n}\n\n// Identificar payment_method\nlet paymentMethod = 'pix'; // Default\nif (textLower.includes('crédito') || textLower.includes('credito')) {\n  paymentMethod = 'credit';\n} else if (textLower.includes('débito') || textLower.includes('debito')) {\n  paymentMethod = 'debit';\n} else if (textLower.includes('dinheiro') || textLower.includes('cash')) {\n  paymentMethod = 'cash';\n} else if (textLower.includes('pix')) {\n  paymentMethod = 'pix';\n}\n\n// Mapeamento de palavras-chave para categorias\nconst categoryKeywords = {\n  'expense': {\n    'padaria': 'Alimentação',\n    'lanche': 'Alimentação',\n    'almoço': 'Alimentação',\n    'almoco': 'Alimentação',\n    'jantar': 'Alimentação',\n    'café': 'Alimentação',\n    'restaurante': 'Alimentação',\n    'ifood': 'Alimentação',\n    'uber eats': 'Alimentação',\n    'mercado': 'Mercado',\n    'supermercado': 'Mercado',\n    'feira': 'Mercado',\n    'uber': 'Transporte',\n    '99': 'Transporte',\n    'gasolina': 'Transporte',\n    'combustível': 'Transporte',\n    'onibus': 'Transporte',\n    'metro': 'Transporte',\n    'netflix': 'Assinaturas',\n    'spotify': 'Assinaturas',\n    'disney': 'Assinaturas',\n    'amazon': 'Assinaturas',\n    'hbo': 'Assinaturas',\n    'youtube': 'Assinaturas',\n    'farmacia': 'Saúde',\n    'farmácia': 'Saúde',\n    'remedio': 'Saúde',\n    'remédio': 'Saúde',\n    'medico': 'Saúde',\n    'médico': 'Saúde',\n    'hospital': 'Saúde',\n    'luz': 'Contas',\n    'água': 'Contas',\n    'agua': 'Contas',\n    'internet': 'Contas',\n    'telefone': 'Contas',\n    'aluguel': 'Casa',\n    'condomínio': 'Casa',\n    'condominio': 'Casa'\n  },\n  'income': {\n    'salário': 'Salário',\n    'salario': 'Salário',\n    'freelance': 'Freelance',\n    'freela': 'Freelance',\n    'rendimento': 'Rendimentos',\n    'dividendo': 'Rendimentos'\n  },\n  'investment': {\n    'fii': 'FII',\n    'fundo imobiliário': 'FII',\n    'ação': 'Ações',\n    'acao': 'Ações',\n    'ações': 'Ações',\n    'acoes': 'Ações',\n    'crypto': 'Crypto',\n    'bitcoin': 'Crypto',\n    'ethereum': 'Crypto',\n    'etf': 'ETFs',\n    'tesouro': 'Renda fixa',\n    'cdb': 'Renda fixa',\n    'renda fixa': 'Renda fixa'\n  }\n};\n\n// Encontrar categoria\nlet category = 'Outros';\nconst typeKeywords = categoryKeywords[type] || categoryKeywords['expense'];\nfor (const [keyword, cat] of Object.entries(typeKeywords)) {\n  if (textLower.includes(keyword)) {\n    category = cat;\n    break;\n  }\n}\n\n// Determinar se é válido para salvar\nconst isValid = amount !== null && amount > 0;\n\nreturn {\n  raw_text: text,\n  amount_brl: amount,\n  type: type,\n  category: category,\n  payment_method: paymentMethod,\n  source: 'whatsapp',\n  is_valid: isValid,\n  description: text.substring(0, 200)\n};"
+            },
+            "id": "parse-transaction",
+            "name": "Parse Transaction",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1050,
+                300
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.is_valid }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-valid",
+            "name": "Is Valid?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1250,
+                300
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "operation": "insert",
+                "table": "transactions",
+                "columns": "type,amount_brl,category,payment_method,description,source,raw_text",
+                "additionalFields": {}
+            },
+            "id": "supabase-insert",
+            "name": "Save to Supabase",
+            "type": "n8n-nodes-base.supabase",
+            "position": [
+                1450,
+                200
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "url": "={{ $node['Webhook WhatsApp'].json.replyUrl }}",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "message",
+                            "value": "={{ '✅ Registrado!\\n\\n' + ($json.type === 'income' ? '📥 Entrada' : ($json.type === 'investment' ? '📈 Investimento' : '📤 Saída')) + '\\n💰 R$ ' + $json.amount_brl.toFixed(2) + '\\n📁 ' + $json.category + '\\n💳 ' + $json.payment_method.toUpperCase() }}"
+                        }
+                    ]
+                }
+            },
+            "id": "reply-success",
+            "name": "Reply Success",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1650,
+                200
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "url": "={{ $node['Webhook WhatsApp'].json.replyUrl }}",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "message",
+                            "value": "🤔 Não consegui identificar o valor.\\n\\nTente novamente com o formato:\\n\"Gastei R$ 50 no almoço pix\"\\n\"R$ 100 uber débito\"\\n\"Investi 1000 em FII\""
+                        }
+                    ]
+                }
+            },
+            "id": "reply-error",
+            "name": "Reply Error",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1450,
+                400
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ success: $json.is_valid, transaction: $json }) }}"
+            },
+            "id": "respond",
+            "name": "Respond Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "position": [
+                1850,
+                300
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Webhook WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Is Audio?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Audio?": {
+            "main": [
+                [
+                    {
+                        "node": "Download Audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Parse Transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Whisper Transcription",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Whisper Transcription": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Transaction": {
+            "main": [
+                [
+                    {
+                        "node": "Is Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Save to Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Reply Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save to Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Reply Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Reply Success": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Reply Error": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

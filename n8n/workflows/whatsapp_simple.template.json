@@ -1,0 +1,208 @@
+{
+    "name": "WhatsApp Transaction Processor - TEMPLATE",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "lastNode"
+            },
+            "id": "webhook-1",
+            "name": "Webhook WhatsApp",
+            "type": "n8n-nodes-base.webhook",
+            "position": [
+                250,
+                300
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "jsCode": "// Cole aqui o código do Parser (ver arquivo README ou documentação)"
+            },
+            "id": "parse",
+            "name": "Parse Transaction",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                450,
+                300
+            ],
+            "typeVersion": 2
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.is_valid }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "if-valid",
+            "name": "Is Valid?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                650,
+                300
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://YOUR_PROJECT.supabase.co/rest/v1/transactions",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "YOUR_SUPABASE_ANON_KEY"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer YOUR_SUPABASE_ANON_KEY"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "Prefer",
+                            "value": "return=representation"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "user_id",
+                            "value": "YOUR_USER_ID_UUID"
+                        },
+                        {
+                            "name": "type",
+                            "value": "={{ $json.type }}"
+                        },
+                        {
+                            "name": "amount_brl",
+                            "value": "={{ $json.amount_brl }}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{ $json.category }}"
+                        },
+                        {
+                            "name": "payment_method",
+                            "value": "={{ $json.payment_method }}"
+                        },
+                        {
+                            "name": "description",
+                            "value": "={{ $json.description }}"
+                        },
+                        {
+                            "name": "source",
+                            "value": "whatsapp"
+                        },
+                        {
+                            "name": "raw_text",
+                            "value": "={{ $json.raw_text }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "supabase",
+            "name": "Save to Supabase",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                900,
+                200
+            ],
+            "typeVersion": 3
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"success\": true,\n  \"message\": \"Transação salva com sucesso!\"\n}"
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "position": [
+                1150,
+                200
+            ],
+            "typeVersion": 1
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"success\": false,\n  \"error\": \"Não entendi o valor. Tente ex: 50 mercado\"\n}"
+            },
+            "id": "respond-error",
+            "name": "Respond Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "position": [
+                900,
+                450
+            ],
+            "typeVersion": 1
+        }
+    ],
+    "connections": {
+        "Webhook WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Transaction": {
+            "main": [
+                [
+                    {
+                        "node": "Is Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Save to Supabase",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save to Supabase": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
