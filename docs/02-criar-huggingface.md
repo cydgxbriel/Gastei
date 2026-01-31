@@ -72,15 +72,12 @@ git push
 
 ### Secret 1: SUPABASE_URL
 - **Name**: `SUPABASE_URL`
-- **Value**: `https://qlifljzlqummsakarpbf.supabase.co`
+- **Value**: Copie de `.env` (SUPABASE_URL)
 - Clique em **"Add"**
 
 ### Secret 2: SUPABASE_KEY
 - **Name**: `SUPABASE_KEY`
-- **Value**: Cole a **Anon/Public Key** de `docs/keys.md`:
-  ```
-  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaWZsanpscXVtbXNha2FycGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg0NjI5NzAsImV4cCI6MjA1NDAzODk3MH0.sb_publishable_4bbnJ3nT1dOsqgPsl6D82g_QAOJ9jls
-  ```
+- **Value**: Copie de `.env` (SUPABASE_PUBLISHABLE_KEY)
 - Clique em **"Add"**
 
 ---

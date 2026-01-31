@@ -47,11 +47,11 @@ Após o upload, **IMEDIATAMENTE**:
 
 **Secret 1:**
 - Name: `SUPABASE_URL`
-- Value: `https://qlifljzlqummsakarpbf.supabase.co`
+- Value: *(Copie o valor de SUPABASE_URL do seu arquivo .env)*
 
 **Secret 2:**
 - Name: `SUPABASE_KEY`
-- Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaWZsanpscXVtbXNha2FycGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg0NjI5NzAsImV4cCI6MjA1NDAzODk3MH0.sb_publishable_4bbnJ3nT1dOsqgPsl6D82g_QAOJ9jls`
+- Value: *(Copie o valor de SUPABASE_PUBLISHABLE_KEY do seu arquivo .env)*
 
 ---
 

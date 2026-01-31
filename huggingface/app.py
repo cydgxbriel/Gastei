@@ -7,12 +7,21 @@ Hugging Face Spaces com Gradio
 import gradio as gr
 import os
 import re
+from dotenv import load_dotenv
 from supabase import create_client, Client
 from datetime import datetime, date
 
+# Load .env locally if present
+try:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(os.path.dirname(current_dir), 'docs', '.env')
+    load_dotenv(env_path)
+except Exception:
+    pass
+
 # Configuração do Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
 
 supabase: Client = None
 
