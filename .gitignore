@@ -1,10 +1,11 @@
 # .gitignore
 
 # Credenciais (NUNCA commitar!)
+.env
+docs/.env
 keys.md
 docs/keys.md
 n8n/workflows/whatsapp_simple.json
-n8n/create_workflow.py
 *.key
 *.pem
 
