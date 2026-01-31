@@ -4,7 +4,7 @@ Hugging Face Spaces com Gradio
 
 Para configurar no HF Spaces, adicione os Secrets:
 - SUPABASE_URL
-- SUPABASE_KEY (service_role key para ignorar RLS)
+- SUPABASE_SERVICE_ROLE_KEY (recomendado) ou SUPABASE_KEY (service_role para ignorar RLS)
 - DEFAULT_USER_ID (UUID do usuario no Supabase Auth)
 """
 
@@ -42,7 +42,11 @@ except ImportError:
 
 class Config:
     SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "").strip()
-    SUPABASE_KEY: str = (os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")).strip().replace("\n", "").replace(" ", "")
+    SUPABASE_KEY: str = (
+        os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        or os.environ.get("SUPABASE_KEY")
+        or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
+    ).strip().replace("\n", "").replace(" ", "")
     # User ID fixo para app single-user (pegar do Supabase Dashboard > Authentication > Users)
     DEFAULT_USER_ID: str = os.environ.get("DEFAULT_USER_ID", "").strip()
 
